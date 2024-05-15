@@ -6,15 +6,12 @@ on:
     branches:
       - "*"
   workflow_dispatch:
-  schedule:
-    - cron: '0 * * * *'
 
 env:
   DATA_PATH: "./"
 
 jobs:
   build-cache:
-    environment: credits-cache
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -30,7 +27,7 @@ jobs:
         BLOCKLIST_GIST: "ea66a13182db2a0747e930bf84e40692"
         BLOCKLIST_FILE: "blocklist.json"
       with:
-        github-token: ${{ secrets.PAT }}
+        github-token: ${{ secrets.PAT_NOPERM }}
         script: |
           const { BLOCKLIST_GIST, BLOCKLIST_FILE } = process.env
           const { data: gist } = await github.rest.gists.get({
@@ -54,7 +51,7 @@ jobs:
       env:
           getContributors: ${{ steps.getContributors.outputs.result }}
       with:
-        github-token: ${{ secrets.PAT }}
+        github-token: ${{ secrets.PAT_NOPERM }}
         script: |
             const contributors = JSON.parse(process.env.getContributors)
             var query = "query{search(first:50query:\""
