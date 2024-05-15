@@ -95,8 +95,6 @@ jobs:
               namedUsers[names[i].id] = names[i].name
             }
 
-            console.log(namedUsers)
-
             var contributorMetadata = []
             for (i = 0; i < contributors.length; i++) {
               const contributor = contributors[i]
@@ -104,7 +102,7 @@ jobs:
               if (!blockedUsers[contributor.id]) {
                 contributorMetadata.push({
                   id: contributor.id,
-                  name: namedUsers[contributor.id] ? names[contributor.id].name : contributor.login,
+                  name: namedUsers[contributor.node_id] ? names[contributor.node_id].name : contributor.login,
                   login: contributor.login,
                 })
 
