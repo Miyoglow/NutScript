@@ -95,6 +95,8 @@ jobs:
               namedUsers[names[i].id] = names[i].name
             }
 
+            console.log(namedUsers)
+
             var contributorMetadata = []
             for (i = 0; i < contributors.length; i++) {
               const contributor = contributors[i]
