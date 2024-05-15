@@ -42,7 +42,7 @@ jobs:
       env:
           getContributors: ${{ steps.getContributors.outputs.result }}
       with:
-        github-token: ${{ secrets.PAT_NOPERM }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
             const contributors = JSON.parse(process.env.getContributors)
             var query = "query{search(first:50query:\""
