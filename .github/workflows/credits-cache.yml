@@ -4,7 +4,7 @@ name: Cache contributor data
 on:
   push:
     branches:
-      - main
+      - 1.2.3
   workflow_dispatch:
 
 env:
