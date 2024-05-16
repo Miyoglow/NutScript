@@ -93,7 +93,7 @@ jobs:
             }
 
             var contributorMetadata = {
-              "buildTime": Date.now() / 1000,
+              "buildTime": Math.round(Date.now() / 1000),
               "contributorData": [],
             }
             for (i = 0; i < contributors.length; i++) {
