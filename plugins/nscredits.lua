@@ -27,9 +27,9 @@ PLUGIN.contributorData = PLUGIN.contributorData or {
     {id = "2784192", name = "Black Tea", login = "rebel1324"}
 }
 
-PLUGIN.needsRebuilding = false
-PLUGIN.avatarMaterials = {}
-PLUGIN.fetchedContributors = false
+PLUGIN.needsRebuilding = PLUGIN.needsRebuilding or false
+PLUGIN.avatarMaterials = PLUGIN.avatarMaterials or {}
+PLUGIN.fetchedContributors = PLUGIN.fetchedContributors or false
 
 local creatorHeight = ScreenScale(32)
 local maintainerHeight = ScreenScale(32)
@@ -199,21 +199,17 @@ function PANEL:Init()
         gui.OpenURL("https://github.com/NutScript")
     end
 
-    if (table.Count(PLUGIN.NS_CREATORS) > 0) then
-        self.creatorList = self:Add("nutCreditsSpecialList")
-        self.creatorList:Dock(TOP)
-        self.creatorList:SetText("Creators")
-        self.creatorList:SetRowHeight(creatorHeight)
-        self.creatorList:DockMargin(0, 0, 0, 4)
-    end
+    self.creatorList = self:Add("nutCreditsSpecialList")
+    self.creatorList:Dock(TOP)
+    self.creatorList:SetText("Creators")
+    self.creatorList:SetRowHeight(creatorHeight)
+    self.creatorList:DockMargin(0, 0, 0, 4)
 
-    if (table.Count(PLUGIN.NS_MAINTAINERS) > 0) then
-        self.maintainerList = self:Add("nutCreditsSpecialList")
-        self.maintainerList:Dock(TOP)
-        self.maintainerList:SetText("Maintainers")
-        self.maintainerList:SetRowHeight(maintainerHeight)
-        self.maintainerList:DockMargin(0, 0, 0, 4)
-    end
+    self.maintainerList = self:Add("nutCreditsSpecialList")
+    self.maintainerList:Dock(TOP)
+    self.maintainerList:SetText("Maintainers")
+    self.maintainerList:SetRowHeight(maintainerHeight)
+    self.maintainerList:DockMargin(0, 0, 0, 4)
 
     local seperator = self:Add("Panel")
     seperator:Dock(TOP)
@@ -251,20 +247,20 @@ function PANEL:Init()
 
                 local json = util.JSONToTable(body, false, true)
 
-                if (istable(json)) then
-                    if (istable(json.contributorData)) then
-                        for k, data in ipairs(json.contributorData or {}) do
-                            if (istable(json.contributorData) and data.id) then
-                                table.insert(PLUGIN.contributorData, data)
-                            end
+                local buildTime = ""
+
+                for k, data in ipairs(json or {}) do
+                    if (istable(data)) then
+                        if (isnumber(data.id)) then
+                            table.insert(PLUGIN.contributorData, data)
+                        elseif (isstring(data.buildTime)) then
+                            buildTime = data.buildTime
                         end
                     end
-
-                    if (isstring(json.buildTime)) then
-                        PLUGIN.needsRebuilding = compare64BitStrings(json.buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt")) == -1
-                        file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", json.buildTime)
-                    end
                 end
+
+                PLUGIN.needsRebuilding = compare64BitStrings(buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt") or "0") == 1
+                file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", buildTime)
 
                 if (IsValid(self)) then
                     self:rebuildContributors()
@@ -288,6 +284,19 @@ function PANEL:rebuildContributors()
 
     if (IsValid(self.maintainerList)) then
         self.maintainerList:Clear()
+    end
+
+    local bAreMaintainers
+
+    for _, v in ipairs(PLUGIN.contributorData) do
+        if (v.maintainer) then
+            bAreMaintainers = true
+            break
+        end
+    end
+
+    if (!bAreMaintainers) then
+        self.maintainerList:SetVisible(false)
     end
 
     self.contribList:Clear()
@@ -394,8 +403,8 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
         end
 
         if (bLoadNextChunk) then
-            avatar.OnFinishGettingMaterial = function(this, url)                    
-                local toLoad = 7
+            avatar.OnFinishGettingMaterial = function(this, all, onlyFew)
+                local toLoad = (all and #PLUGIN.contributorData - 1) or (onlyFew and 3) or 7
 
                 for i = 1, toLoad do
                     if (contributor + i > #PLUGIN.contributorData) then
@@ -432,14 +441,19 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
                 avatar.material = PLUGIN.avatarMaterials[contributor]
 
                 if (avatar.OnFinishGettingMaterial) then
-                    avatar:OnFinishGettingMaterial()
+                    -- we gotta do this, making all the Materials() at once lags too much
+                    timer.Simple(0.1, function()
+                        if (IsValid(avatar)) then
+                            avatar:OnFinishGettingMaterial(false, true)
+                        end
+                    end)
                 end
             end
         else
             avatar.material = PLUGIN.avatarMaterials[contributor]
 
             if (avatar.OnFinishGettingMaterial) then
-                avatar:OnFinishGettingMaterial()
+                avatar:OnFinishGettingMaterial(true)
             end
         end
 

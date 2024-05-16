@@ -92,15 +92,15 @@ jobs:
               namedUsers[names[i].id] = names[i].name
             }
 
-            var contributorMetadata = {
+            var contributorMetadata = []
+            contributorMetadata.push({
               "buildTime": Math.round(Date.now() / 1000).toString(),
-              "contributorData": [],
-            }
+            })
             for (i = 0; i < contributors.length; i++) {
               const contributor = contributors[i]
 
               if (!blockedUsers[contributor.id]) {
-                contributorMetadata.contributorData.push({
+                contributorMetadata.push({
                   id: contributor.id.toString(),
                   name: namedUsers[contributor.node_id] ? namedUsers[contributor.node_id] : contributor.login,
                   login: contributor.login,
