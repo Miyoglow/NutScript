@@ -9,14 +9,14 @@ if (SERVER) then return end
 
 PLUGIN.NS_CREATORS = {
     -- Chessnut
-    ["1689094"] = true,
+    [1689094] = true,
     -- rebel1324
-    ["2784192"] = true
+    [2784192] = true
 }
 
 PLUGIN.NAME_OVERRIDES = {
-    ["1689094"] = "Chessnut",
-    ["2784192"] = "Black Tea"
+    [1689094] = "Chessnut",
+    [2784192] = "Black Tea"
 }
 
 PLUGIN.CACHE_URL = "https://raw.githubusercontent.com/Miyoglow/NutScript/credits-cache"
@@ -210,6 +210,7 @@ function PANEL:Init()
     self.maintainerList:SetText("Maintainers")
     self.maintainerList:SetRowHeight(maintainerHeight)
     self.maintainerList:DockMargin(0, 0, 0, 4)
+    self.maintainerList:SetVisible(false)
 
     local seperator = self:Add("Panel")
     seperator:Dock(TOP)
@@ -247,20 +248,16 @@ function PANEL:Init()
 
                 local json = util.JSONToTable(body, false, true)
 
-                local buildTime = ""
-
                 for k, data in ipairs(json or {}) do
                     if (istable(data)) then
                         if (isnumber(data.id)) then
                             table.insert(PLUGIN.contributorData, data)
                         elseif (isstring(data.buildTime)) then
-                            buildTime = data.buildTime
+                            PLUGIN.needsRebuilding = compare64BitStrings(data.buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt") or "0") == 1
+                            file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", data.buildTime)
                         end
                     end
                 end
-
-                PLUGIN.needsRebuilding = compare64BitStrings(buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt") or "0") == 1
-                file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", buildTime)
 
                 if (IsValid(self)) then
                     self:rebuildContributors()
@@ -286,17 +283,13 @@ function PANEL:rebuildContributors()
         self.maintainerList:Clear()
     end
 
-    local bAreMaintainers
-
-    for _, v in ipairs(PLUGIN.contributorData) do
-        if (v.maintainer) then
-            bAreMaintainers = true
-            break
+    if (!self.maintainerList:IsVisible()) then
+        for _, v in ipairs(PLUGIN.contributorData) do
+            if (v.maintainer) then
+                self.maintainerList:SetVisible(true)
+                break
+            end
         end
-    end
-
-    if (!bAreMaintainers) then
-        self.maintainerList:SetVisible(false)
     end
 
     self.contribList:Clear()
