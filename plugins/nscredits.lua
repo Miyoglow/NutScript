@@ -9,29 +9,25 @@ if (SERVER) then return end
 
 PLUGIN.NS_CREATORS = {
     -- Chessnut
-    [1689094] = true,
+    ["1689094"] = true,
     -- rebel1324
-    [2784192] = true
-}
-PLUGIN.NS_MAINTAINERS = {
-    -- TovarischPootis
-    [54110479] = true,
-    -- zoephix
-    [21306782] = true
-}
-PLUGIN.NAME_OVERRIDES = {
-    [1689094] = "Chessnut",
-    [2784192] = "Black Tea"
+    ["2784192"] = true
 }
 
-PLUGIN.CACHE_URL = "https://raw.githubusercontent.com/NutScript/NutScript/credits-cache"
+PLUGIN.NAME_OVERRIDES = {
+    ["1689094"] = "Chessnut",
+    ["2784192"] = "Black Tea"
+}
+
+PLUGIN.CACHE_URL = "https://raw.githubusercontent.com/Miyoglow/NutScript/credits-cache"
 PLUGIN.MATERIAL_FOLDER = "ns/credits-cache"
 
 PLUGIN.contributorData = PLUGIN.contributorData or {
-    {id = 1689094, name = "Chessnut", login = "Chessnut"},
-    {id = 2784192, name = "Black Tea", login = "rebel1324"}
+    {id = "1689094", name = "Chessnut", login = "Chessnut"},
+    {id = "2784192", name = "Black Tea", login = "rebel1324"}
 }
 
+PLUGIN.needsRebuilding = PLUGIN.needsRebuilding or false
 PLUGIN.avatarMaterials = PLUGIN.avatarMaterials or {}
 PLUGIN.fetchedContributors = PLUGIN.fetchedContributors or false
 
@@ -152,6 +148,26 @@ end
 
 vgui.Register("CreditsLogo", PANEL, "Panel")
 
+-- is this really needed?
+local function compare64BitStrings(str1, str2)
+    local maxLength = math.max(#str1, #str2)
+    str1 = string.rep("0", maxLength - #str1) .. str1
+    str2 = string.rep("0", maxLength - #str2) .. str2
+    
+    for i = 1, maxLength do
+        local digit1 = tonumber(string.sub(str1, i, i))
+        local digit2 = tonumber(string.sub(str2, i, i))
+        
+        if digit1 < digit2 then
+            return -1
+        elseif digit1 > digit2 then
+            return 1
+        end
+    end
+    
+    return 0
+end
+
 PANEL = {}
 
 function PANEL:Init()
@@ -233,11 +249,21 @@ function PANEL:Init()
                 PLUGIN.contributorData = {}
                 PLUGIN.fetchedContributors = true
 
-                local contributors = util.JSONToTable(body)
+                local json = util.JSONToTable(body, nil, true)
 
-                for k, data in ipairs(contributors or {}) do
-                    if (istable(data) and data.id) then
-                        table.insert(PLUGIN.contributorData, data)
+                if (istable(json)) then
+                    if (istable(json.contributorData) and data.id) then
+                        for k, data in ipairs(json or {}) do
+                            if (istable(json.contributorData) and data.id) then
+                                table.insert(PLUGIN.contributorData, data)
+                            end
+                        end
+                    end
+
+                    if (isstring(json.buildTime)) then
+                        PLUGIN.needsRebuilding = compare64BitStrings(json.buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt")) == -1
+
+                        file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", json.buildTime)
                     end
                 end
 
@@ -305,10 +331,10 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
 
     if (contributorData) then
         local isCreator = PLUGIN.NS_CREATORS[contributorData.id]
-        local isMaintainer = PLUGIN.NS_MAINTAINERS[contributorData.id]
+        local isMaintainer = contributorData.maintainer
 
         local container = vgui.Create("Panel")
-        
+
         if (isCreator) then
             self.creatorList:Add(container)
         elseif (isMaintainer) then
@@ -383,24 +409,33 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
         end
 
         if (!PLUGIN.avatarMaterials[contributor]) then
-            HTTP({
-                url = PLUGIN.CACHE_URL .. "/" .. contributorData.id,
-                method = "GET",
-                success = function(code, body)
-                    file.CreateDir(PLUGIN.MATERIAL_FOLDER)
-                    file.Write(PLUGIN.MATERIAL_FOLDER .. "/" .. tostring(contributorData.id) .. ".png", body)
+            if (PLUGIN.needsRebuilding) then
+                HTTP({
+                    url = PLUGIN.CACHE_URL .. "/" .. contributorData.id,
+                    method = "GET",
+                    success = function(code, body)
+                        file.CreateDir(PLUGIN.MATERIAL_FOLDER)
+                        file.Write(PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", body)
 
-                    PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. tostring(contributorData.id) .. ".png", "mips smooth")
-    
-                    if (IsValid(avatar)) then
-                        avatar.material = PLUGIN.avatarMaterials[contributor]
+                        PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", "mips smooth")
+        
+                        if (IsValid(avatar)) then
+                            avatar.material = PLUGIN.avatarMaterials[contributor]
 
-                        if (avatar.OnFinishGettingMaterial) then
-                            avatar:OnFinishGettingMaterial()
+                            if (avatar.OnFinishGettingMaterial) then
+                                avatar:OnFinishGettingMaterial()
+                            end
                         end
                     end
+                })
+            else
+                PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", "mips smooth")
+                avatar.material = PLUGIN.avatarMaterials[contributor]
+
+                if (avatar.OnFinishGettingMaterial) then
+                    avatar:OnFinishGettingMaterial()
                 end
-            })
+            end
         else
             avatar.material = PLUGIN.avatarMaterials[contributor]
 
