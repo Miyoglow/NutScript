@@ -23,8 +23,8 @@ PLUGIN.CACHE_URL = "https://raw.githubusercontent.com/Miyoglow/NutScript/credits
 PLUGIN.MATERIAL_FOLDER = "ns/credits-cache"
 
 PLUGIN.contributorData = PLUGIN.contributorData or {
-    {id = "1689094", name = "Chessnut", login = "Chessnut"},
-    {id = "2784192", name = "Black Tea", login = "rebel1324"}
+    {id = 1689094, name = "Chessnut", login = "Chessnut"},
+    {id = 2784192, name = "Black Tea", login = "rebel1324"}
 }
 
 PLUGIN.needsRebuilding = PLUGIN.needsRebuilding or false
