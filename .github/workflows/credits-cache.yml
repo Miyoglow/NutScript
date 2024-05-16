@@ -93,7 +93,7 @@ jobs:
             }
 
             var contributorMetadata = {
-              "buildTime": Date.now() / 1000,
+              "buildTime": Math.round(Date.now() / 1000).toString(),
               "contributorData": [],
             }
             for (i = 0; i < contributors.length; i++) {
@@ -101,7 +101,7 @@ jobs:
 
               if (!blockedUsers[contributor.id]) {
                 contributorMetadata.contributorData.push({
-                  id: contributor.id,
+                  id: contributor.id.toString(),
                   name: namedUsers[contributor.node_id] ? namedUsers[contributor.node_id] : contributor.login,
                   login: contributor.login,
                   maintainer: maintainerUsers[contributor.id] ? true : null

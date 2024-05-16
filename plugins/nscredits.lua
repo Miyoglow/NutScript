@@ -27,9 +27,9 @@ PLUGIN.contributorData = PLUGIN.contributorData or {
     {id = "2784192", name = "Black Tea", login = "rebel1324"}
 }
 
-PLUGIN.needsRebuilding = PLUGIN.needsRebuilding or false
-PLUGIN.avatarMaterials = PLUGIN.avatarMaterials or {}
-PLUGIN.fetchedContributors = PLUGIN.fetchedContributors or false
+PLUGIN.needsRebuilding = false
+PLUGIN.avatarMaterials = {}
+PLUGIN.fetchedContributors = false
 
 local creatorHeight = ScreenScale(32)
 local maintainerHeight = ScreenScale(32)
@@ -249,11 +249,11 @@ function PANEL:Init()
                 PLUGIN.contributorData = {}
                 PLUGIN.fetchedContributors = true
 
-                local json = util.JSONToTable(body, nil, true)
+                local json = util.JSONToTable(body, false, true)
 
                 if (istable(json)) then
-                    if (istable(json.contributorData) and data.id) then
-                        for k, data in ipairs(json or {}) do
+                    if (istable(json.contributorData)) then
+                        for k, data in ipairs(json.contributorData or {}) do
                             if (istable(json.contributorData) and data.id) then
                                 table.insert(PLUGIN.contributorData, data)
                             end
@@ -262,7 +262,6 @@ function PANEL:Init()
 
                     if (isstring(json.buildTime)) then
                         PLUGIN.needsRebuilding = compare64BitStrings(json.buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt")) == -1
-
                         file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", json.buildTime)
                     end
                 end
