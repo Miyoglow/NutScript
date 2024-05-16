@@ -101,7 +101,7 @@ jobs:
 
               if (!blockedUsers[contributor.id]) {
                 contributorMetadata.push({
-                  id: contributor.id.toString(),
+                  id: contributor.id,
                   name: namedUsers[contributor.node_id] ? namedUsers[contributor.node_id] : contributor.login,
                   login: contributor.login,
                   maintainer: maintainerUsers[contributor.id] ? true : null
