@@ -93,9 +93,6 @@ jobs:
             }
 
             var contributorMetadata = []
-            contributorMetadata.push({
-              "buildTime": Math.round(Date.now() / 1000).toString(),
-            })
             for (i = 0; i < contributors.length; i++) {
               const contributor = contributors[i]
 

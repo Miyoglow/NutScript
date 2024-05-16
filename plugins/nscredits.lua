@@ -148,26 +148,6 @@ end
 
 vgui.Register("CreditsLogo", PANEL, "Panel")
 
--- is this really needed?
-local function compare64BitStrings(str1, str2)
-    local maxLength = math.max(#str1, #str2)
-    str1 = string.rep("0", maxLength - #str1) .. str1
-    str2 = string.rep("0", maxLength - #str2) .. str2
-    
-    for i = 1, maxLength do
-        local digit1 = tonumber(string.sub(str1, i, i))
-        local digit2 = tonumber(string.sub(str2, i, i))
-        
-        if digit1 < digit2 then
-            return -1
-        elseif digit1 > digit2 then
-            return 1
-        end
-    end
-    
-    return 0
-end
-
 PANEL = {}
 
 function PANEL:Init()
@@ -246,16 +226,11 @@ function PANEL:Init()
                 PLUGIN.contributorData = {}
                 PLUGIN.fetchedContributors = true
 
-                local json = util.JSONToTable(body, false, true)
+                local contributors = util.JSONToTable(body)
 
-                for k, data in ipairs(json or {}) do
-                    if (istable(data)) then
-                        if (isnumber(data.id)) then
-                            table.insert(PLUGIN.contributorData, data)
-                        elseif (isstring(data.buildTime)) then
-                            PLUGIN.needsRebuilding = compare64BitStrings(data.buildTime, file.Read(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt") or "0") == 1
-                            file.Write(PLUGIN.MATERIAL_FOLDER .. "/buildtime.txt", data.buildTime)
-                        end
+                for k, data in ipairs(contributors or {}) do
+                    if (istable(data) and data.id) then
+                        table.insert(PLUGIN.contributorData, data)
                     end
                 end
 
@@ -396,8 +371,8 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
         end
 
         if (bLoadNextChunk) then
-            avatar.OnFinishGettingMaterial = function(this, all, onlyFew)
-                local toLoad = (all and #PLUGIN.contributorData - 1) or (onlyFew and 3) or 7
+            avatar.OnFinishGettingMaterial = function(this, all)
+                local toLoad = (all and #PLUGIN.contributorData - 1) or 7
 
                 for i = 1, toLoad do
                     if (contributor + i > #PLUGIN.contributorData) then
@@ -410,38 +385,24 @@ function PANEL:loadContributor(contributor, bLoadNextChunk)
         end
 
         if (!PLUGIN.avatarMaterials[contributor]) then
-            if (PLUGIN.needsRebuilding) then
-                HTTP({
-                    url = PLUGIN.CACHE_URL .. "/" .. contributorData.id,
-                    method = "GET",
-                    success = function(code, body)
-                        file.CreateDir(PLUGIN.MATERIAL_FOLDER)
-                        file.Write(PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", body)
+            HTTP({
+                url = PLUGIN.CACHE_URL .. "/" .. tostring(contributorData.id),
+                method = "GET",
+                success = function(code, body)
+                    file.CreateDir(PLUGIN.MATERIAL_FOLDER)
+                    file.Write(PLUGIN.MATERIAL_FOLDER .. "/" .. tostring(contributorData.id) .. ".png", body)
 
-                        PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", "mips smooth")
-        
-                        if (IsValid(avatar)) then
-                            avatar.material = PLUGIN.avatarMaterials[contributor]
+                    PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. tostring(contributorData.id) .. ".png", "mips smooth")
+    
+                    if (IsValid(avatar)) then
+                        avatar.material = PLUGIN.avatarMaterials[contributor]
 
-                            if (avatar.OnFinishGettingMaterial) then
-                                avatar:OnFinishGettingMaterial()
-                            end
+                        if (avatar.OnFinishGettingMaterial) then
+                            avatar:OnFinishGettingMaterial()
                         end
                     end
-                })
-            else
-                PLUGIN.avatarMaterials[contributor] = Material("data/" .. PLUGIN.MATERIAL_FOLDER .. "/" .. contributorData.id .. ".png", "mips smooth")
-                avatar.material = PLUGIN.avatarMaterials[contributor]
-
-                if (avatar.OnFinishGettingMaterial) then
-                    -- we gotta do this, making all the Materials() at once lags too much
-                    timer.Simple(0.1, function()
-                        if (IsValid(avatar)) then
-                            avatar:OnFinishGettingMaterial(false, true)
-                        end
-                    end)
                 end
-            end
+            })
         else
             avatar.material = PLUGIN.avatarMaterials[contributor]
 
